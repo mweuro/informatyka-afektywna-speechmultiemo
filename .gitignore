@@ -1,0 +1,5 @@
+data/*
+!data/Makefile
+!data/params.yaml
+requirements.txt
+sandbox.ipynb
