@@ -18,7 +18,9 @@ load:
 	cd $(TEMP_DIR) && \
 	git sparse-checkout init --cone && \
 	git sparse-checkout set $(REMOTE_AUDIO) $(REMOTE_VIDEO) $(REMOTE_ACTORS_META) $(REMOTE_FILENAMES) && \
+	git lfs install && \
 	git checkout && \
+	git lfs pull && \
 	mv $(REMOTE_AUDIO) ../$(LOCAL_AUDIO) && \
 	mv $(REMOTE_VIDEO) ../$(LOCAL_VIDEO) && \
 	mv $(REMOTE_ACTORS_META) ../$(LOCAL_ACTORS_META) && \
