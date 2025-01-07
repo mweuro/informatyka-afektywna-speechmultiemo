@@ -3,3 +3,5 @@ data/*
 !data/params.yaml
 requirements.txt
 sandbox.ipynb
+emo/
+embeddings/
