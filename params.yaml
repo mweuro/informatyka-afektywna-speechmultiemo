@@ -23,3 +23,13 @@ emotion_level:
   MD: "Medium"
   HI: "High"
   XX: "Unspecified"
+
+
+
+emotion_mapping:
+  NEU: 0
+  HAP: 1
+  SAD: 2
+  ANG: 3
+  FEA: 4
+  DIS: 5

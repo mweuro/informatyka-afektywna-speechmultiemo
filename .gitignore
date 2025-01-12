@@ -1,7 +1,7 @@
 data/*
 !data/Makefile
 !data/params.yaml
+*__pycache__
 requirements.txt
-sandbox.ipynb
 emo/
-embeddings/
+sandbox2.ipynb
