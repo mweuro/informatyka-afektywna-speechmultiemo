@@ -1,50 +1,58 @@
-from transformers import Wav2Vec2Processor, Wav2Vec2Model
+import transformers
+from transformers import Wav2Vec2FeatureExtractor, Wav2Vec2Model, WavLMModel, HubertModel
+from tqdm import tqdm
 import torch
 import librosa
 import os
-import yaml
+from extra import load_yaml, get_class_by_name
 
 
-def load_yaml(file_path: str) -> dict[dict[str, str]]:
-    with open(file_path, 'r') as file:
-        return yaml.safe_load(file)
+
+VARS = load_yaml('params.yaml')
 
 
-MODEL_NAME = 'facebook/wav2vec2-base'
-PROCESSOR = Wav2Vec2Processor.from_pretrained(MODEL_NAME)
-MODEL = Wav2Vec2Model.from_pretrained(MODEL_NAME)
-YAML_PATH = 'params.yaml'
-VARS = load_yaml(YAML_PATH)
 
-
-def get_single_audio_embedding(file_path: str) -> torch.tensor:
+def get_single_audio_embedding(file_path: str, 
+                               model: transformers.models, 
+                               processor: transformers.models) -> torch.tensor:
+    
     waveform, sample_rate = librosa.load(file_path, sr = 16000)
     file_emo_alias = file_path.split('/')[-1].split('_')[2]
     label = VARS['emotion_mapping'][file_emo_alias]
-    inputs = PROCESSOR(waveform, sampling_rate = sample_rate, return_tensors = 'pt', padding = True)
+    inputs = processor(waveform, sampling_rate = sample_rate, return_tensors = 'pt', padding = True)
     
     with torch.no_grad():
-        outputs = MODEL(**inputs)
+        outputs = model(**inputs)
         last_hidden_state = outputs.last_hidden_state
     global_embedding = torch.mean(last_hidden_state, dim = 1)
     
     return global_embedding.squeeze(0), torch.tensor(label)
 
 
-def get_all_audio_embeddings(root: str) -> dict[torch.tensor, torch.tensor]:
+
+def get_all_audio_embeddings(root: str, 
+                             model: transformers.models, 
+                             processor: transformers.models) -> dict[torch.tensor, torch.tensor]:
+    
     embeddings = dict()
     paths = sorted([os.path.join(root, file) for file in os.listdir(root) if (file.endswith('.wav') and file != '1076_MTI_SAD_XX.wav')])
-    
-    for path in paths:
-        embedding, label = get_single_audio_embedding(path)
+    for path in tqdm(paths, desc="Processing audio files", unit="file"):
+        embedding, label = get_single_audio_embedding(path, model, processor)
         embeddings[embedding] = label
     
     return embeddings
 
 
+
 def main() -> None:
-    embeddings = get_all_audio_embeddings('data/audio_data')
-    torch.save(embeddings, 'embeddings/audio/raw.pt')
+    
+    audio_models = [VARS['audio_models'][0]]
+    for d in audio_models:
+        model = get_class_by_name('transformers', d['model']).from_pretrained(d['name'])
+        processor = get_class_by_name('transformers', d['processor']).from_pretrained(d['name'])
+        embeddings = get_all_audio_embeddings('data/audio_data', model, processor)
+        torch.save(embeddings, f"embeddings/audio/raw_{d['alias']}.pt")
+
 
 
 if __name__ == '__main__':

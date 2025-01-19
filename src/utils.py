@@ -1,7 +1,7 @@
 import torch
 from torch.utils.data import DataLoader, random_split, Dataset
-from sklearn.metrics import accuracy_score
-import os
+from sklearn.metrics import accuracy_score, precision_score, recall_score, confusion_matrix
+import numpy as np
 import pandas as pd
 import torch.nn as nn
 import torch.optim as optim
@@ -39,13 +39,13 @@ def train_test_dataloader(embeddings_dict: dict, *, batch_size: int = 8, test_ra
 
 
 class MLP(nn.Module):
-    def __init__(self, input_dim: int, hidden_dims: list[int], output_dim: int = 6):
+    def __init__(self, input_dim: int, hidden_dims: list[int], output_dim: int = 6, dropout = 0.3):
         super(MLP, self).__init__()
         
-        layers = [nn.Linear(input_dim, hidden_dims[0]), nn.ReLU(), nn.Dropout(0.3)]
+        layers = [nn.Linear(input_dim, hidden_dims[0]), nn.ReLU(), nn.Dropout(dropout)]
         
         for in_dim, out_dim in zip(hidden_dims[:-1], hidden_dims[1:]):
-            block = [nn.Linear(in_dim, out_dim), nn.ReLU(), nn.Dropout(0.3)]
+            block = [nn.Linear(in_dim, out_dim), nn.ReLU(), nn.Dropout(dropout)]
             layers.extend(block)
             
         last_fc = nn.Linear(hidden_dims[-1], output_dim)
@@ -64,7 +64,7 @@ def _train(model, dataloader, criterion, optimizer, device):
     all_preds = []
     all_labels = []
 
-    for inputs, labels in tqdm(dataloader, desc="Training", leave=False):
+    for inputs, labels in tqdm(dataloader, desc = "Training", leave = False):
         inputs, labels = inputs.to(device), labels.to(device)
 
         # Forward
@@ -77,11 +77,14 @@ def _train(model, dataloader, criterion, optimizer, device):
         optimizer.step()
 
         total_loss += loss.item()
-        all_preds.extend(torch.argmax(outputs, dim=1).cpu().numpy())
+        all_preds.extend(torch.argmax(outputs, dim = 1).cpu().numpy())
         all_labels.extend(labels.cpu().numpy())
 
     accuracy = accuracy_score(all_labels, all_preds)
-    return total_loss / len(dataloader), accuracy
+    precision = precision_score(all_labels, all_preds, average = "weighted", zero_division = 0)
+    recall = recall_score(all_labels, all_preds, average = "weighted", zero_division = 0)
+    cm = confusion_matrix(all_labels, all_preds)
+    return total_loss / len(dataloader), accuracy, precision, recall, cm
 
 
 
@@ -92,7 +95,7 @@ def _validate(model, dataloader, criterion, device):
     all_labels = []
 
     with torch.no_grad():
-        for inputs, labels in tqdm(dataloader, desc="Validation", leave=False):
+        for inputs, labels in tqdm(dataloader, desc = "Validation", leave = False):
             inputs, labels = inputs.to(device), labels.to(device)
 
             # Forward
@@ -100,12 +103,15 @@ def _validate(model, dataloader, criterion, device):
             loss = criterion(outputs, labels)
 
             total_loss += loss.item()
-            all_preds.extend(torch.argmax(outputs, dim=1).cpu().numpy())
+            all_preds.extend(torch.argmax(outputs, dim = 1).cpu().numpy())
             all_labels.extend(labels.cpu().numpy())
 
     accuracy = accuracy_score(all_labels, all_preds)
+    precision = precision_score(all_labels, all_preds, average = "weighted", zero_division = 0)
+    recall = recall_score(all_labels, all_preds, average = "weighted", zero_division = 0)
+    cm = confusion_matrix(all_labels, all_preds)
     
-    return total_loss / len(dataloader), accuracy
+    return total_loss / len(dataloader), accuracy, precision, recall, cm
 
 
 
@@ -135,24 +141,62 @@ def _validate_late_fusion(model, dataloader, criterion, device):
 
 
 
-def train_model(model, criterion, optimizer, num_epochs, train_loader, test_loader, device):
+def train_model(model, criterion, optimizer, num_epochs, train_loader, test_loader, device, patience = np.inf):
     train_losses = []
     val_losses = []
     train_accs = []
     val_accs = []
+    train_precs = []
+    val_precs = []
+    train_recs = []
+    val_recs = []
+    best_acc = 0
+    best_epoch = 0
+    max_epoch = 0
+    is_quit = 0
+    cm = None
+    
     for epoch in range(num_epochs):
-        train_loss, train_acc = _train(model, train_loader, criterion, optimizer, device)
-        val_loss, val_acc = _validate(model, test_loader, criterion, device)
+        train_loss, train_acc, train_prec, train_rec, train_cm = _train(model, train_loader, criterion, optimizer, device)
+        val_loss, val_acc, val_prec, val_rec, val_cm = _validate(model, test_loader, criterion, device)
         train_losses.append(train_loss)
         val_losses.append(val_loss)
         train_accs.append(train_acc)
         val_accs.append(val_acc)
-        print(f"Epoch {epoch+1}/{num_epochs}")
-        print(f"Train Loss: {train_loss:.4f}, Train Accuracy: {train_acc:.4f}")
-        print(f"Val Loss: {val_loss:.4f}, Val Accuracy: {val_acc:.4f}")
-        print("-" * 50)
+        train_precs.append(train_prec)
+        val_precs.append(val_prec)
+        train_recs.append(train_rec)
+        val_recs.append(val_rec)
+        max_epoch += 1
+        
+        if val_acc > best_acc:
+            best_acc = val_acc
+            best_epoch = epoch
+            cm = val_cm
+            is_quit = 0
+        else:
+            is_quit += 1
+            
+        if (epoch + 1) % 5 == 0:
+            print(f"Epoch {epoch + 1}/{num_epochs}")
+            print(f"Train Loss: {train_loss:.4f},\
+                    Train Accuracy: {train_acc:.4f},\
+                    Train Precision: {train_prec:.4f},\
+                    Train Recall {train_rec:.4f}.")
+            print(f"Val Loss: {val_loss:.4f},\
+                    Val Accuracy: {val_acc:.4f},\
+                    Val Precision: {val_prec:.4f},\
+                    Val Recall: {val_rec:.4f}.")
+            print("-" * 50)
+        
+        if is_quit > patience:
+            break
+    print(f"BEST EPOCH: {best_epoch:.2f}\
+          BEST ACCURACY: {val_accs[best_epoch]:.2f}\
+          BEST PRECISION: {val_precs[best_epoch]:.2f}\
+          BEST RECALL: {val_recs[best_epoch]:.2f}")
     
-    return [*range(1, num_epochs + 1)], train_losses, val_losses, train_accs, val_accs 
+    return [*range(1, max_epoch + 1)], train_losses, val_losses, train_accs, val_accs, train_precs, val_precs, train_recs, val_recs, best_epoch, cm 
 
         
 
@@ -169,13 +213,13 @@ def train_late_fusion_model(model, criterion, optimizer, num_epochs, train_loade
 
 
 
-def plot_metrics(epochs, train_losses, val_losses, train_accs, val_accs):
-    _, axs = plt.subplots(1, 1, figsize = (15, 7))
-    axs.plot(epochs, train_losses, color = 'blue', linestyle = 'dashdot', label = 'train loss')
-    axs.plot(epochs, val_losses, color = 'blue', linestyle = 'solid', label = 'val loss')
-    axs.plot(epochs, train_accs, color = 'red', linestyle = 'dashdot', label = 'train acc')
-    axs.plot(epochs, val_accs, color = 'red', linestyle = 'solid', label = 'val acc')
-    plt.legend()
-    plt.title('Model results', fontsize = 20)
-    plt.tight_layout()
-    plt.show()
+def concat_embs(embs_dict1, embs_dict2):
+    get_embeddings = lambda embs_dict: torch.stack(list(embs_dict.keys()), dim = 0)
+    embs1 = get_embeddings(embs_dict1)
+    embs2 = get_embeddings(embs_dict2)
+    labels = list(embs_dict1.values())
+    fused_embs = torch.cat((embs1, embs2), dim = 1)
+    fused_embs = list(torch.chunk(fused_embs, chunks = len(labels), dim = 0))
+    fused_embs = [emb.squeeze(0) for emb in fused_embs]
+    result_dict = dict(zip(fused_embs, labels))
+    return result_dict

@@ -1,3 +1,4 @@
+# CREMA-D META ENCODING
 sentence:
   IEO: "It's eleven o'clock"
   TIE: "That is exactly what happened"
@@ -24,8 +25,7 @@ emotion_level:
   HI: "High"
   XX: "Unspecified"
 
-
-
+# EMOTION MAPPING
 emotion_mapping:
   NEU: 0
   HAP: 1
@@ -33,3 +33,18 @@ emotion_mapping:
   ANG: 3
   FEA: 4
   DIS: 5
+
+# AUDIO MODELS
+audio_models:
+  - processor: Wav2Vec2FeatureExtractor
+    model: Wav2Vec2Model
+    name: jonatasgrosman/wav2vec2-large-xlsr-53-english
+    alias: wav2vec2
+  - processor: Wav2Vec2FeatureExtractor
+    model: WavLMModel
+    name: microsoft/wavlm-large
+    alias: wavlm
+  - processor: Wav2Vec2FeatureExtractor
+    model: HubertModel
+    name: facebook/hubert-large-ls960-ft
+    alias: hubert
