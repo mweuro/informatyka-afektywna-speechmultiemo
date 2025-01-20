@@ -39,7 +39,7 @@ def custom_train_test_split(embeddings_dict: dict, train_size: int):
     actor_ids = sorted(actor_ids)
 
     for actor_id, (embedding, label) in zip(actor_ids, embeddings_dict.items()):
-        print(f"File: {actor_id}, Embedding: {embedding}, Label: {label}")
+        #print(f"File: {actor_id}, Embedding: {embedding}, Label: {label}")
         if actor_id != previous_id and i >= train_size and train_flag == True:
             train_flag = False
         else:
