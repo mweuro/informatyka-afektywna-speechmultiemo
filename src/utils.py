@@ -37,16 +37,16 @@ def custom_train_test_split(embeddings_dict: dict, train_size: int):
     file_names = os.listdir(folder_path)
     actor_ids = [file_name[:4] for file_name in file_names if file_name != '1076_MTI_SAD_XX.wav']
 
-    for file1, (embedding, label) in zip(file_names, embeddings_dict.items()):
-        print(f"File: {file1}, Embedding: {embedding}, Label: {label}")
-        if file1 != previous_id and i >= train_size and train_flag == True:
+    for actor_id, (embedding, label) in zip(actor_ids, embeddings_dict.items()):
+        print(f"File: {actor_id}, Embedding: {embedding}, Label: {label}")
+        if actor_id != previous_id and i >= train_size and train_flag == True:
             train_flag = False
         else:
             if train_flag:
                 train[embedding] = label
             else:
                 test[embedding] = label
-            previous_id = file1
+            previous_id = actor_id
             i = i + 1
     return train, test
 
