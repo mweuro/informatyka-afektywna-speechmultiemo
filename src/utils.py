@@ -36,7 +36,8 @@ def custom_train_test_split(embeddings_dict: dict, train_size: int):
     folder_path = "../data/audio_data"  #mozna potem sparametryzowac funkcje o path
     file_names = os.listdir(folder_path)
     actor_ids = [file_name[:4] for file_name in file_names if file_name != '1076_MTI_SAD_XX.wav']
-
+    actor_ids = sorted(actor_ids)
+    
     for actor_id, (embedding, label) in zip(actor_ids, embeddings_dict.items()):
         print(f"File: {actor_id}, Embedding: {embedding}, Label: {label}")
         if actor_id != previous_id and i >= train_size and train_flag == True:
