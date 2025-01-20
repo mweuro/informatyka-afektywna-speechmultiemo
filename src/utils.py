@@ -7,7 +7,7 @@ import torch.nn as nn
 import torch.optim as optim
 from tqdm import tqdm
 import matplotlib.pyplot as plt
-
+import os
 
 
 
@@ -26,6 +26,46 @@ class CremaDataset(Dataset):
         return emb, label
 
 
+def custom_train_test_split(embeddings_dict: dict, train_size: int):
+    train = dict()
+    test = dict()
+    i = 0
+    previous_id = None
+    train_flag = True
+
+    folder_path = "../data/audio_data"  #mozna potem sparametryzowac funkcje o path
+    file_names = os.listdir(folder_path)
+    actor_ids = [file_name[:4] for file_name in file_names if file_name != '1076_MTI_SAD_XX.wav']
+
+    for file1, (embedding, label) in zip(file_names, embeddings_dict.items()):
+        print(f"File: {file1}, Embedding: {embedding}, Label: {label}")
+        if file1 != previous_id and i >= train_size and train_flag == True:
+            train_flag = False
+        else:
+            if train_flag:
+                train[embedding] = label
+            else:
+                test[embedding] = label
+            previous_id = file1
+            i = i + 1
+    return train, test
+
+def train_test_dataloader_v2(embeddings_dict: dict, *, batch_size: int = 8, test_ratio: float = 0.2) -> tuple[DataLoader]:
+    #dataset = CremaDataset(embeddings_dict)
+    train_size = int((1 - test_ratio) * len(embeddings_dict))
+    test_size = len(embeddings_dict) - train_size
+    train_dataset = []
+    test_dataset = []
+
+    path = "../data/audio_data"
+    file_names = os.listdir(path)
+    speaker_ids = [file_name[:4] for file_name in file_names if file_name != '1076_MTI_SAD_XX.wav']
+    train_dataset, test_dataset = custom_train_test_split(embeddings_dict, train_size=train_size)
+
+    #train_dataset, test_dataset = random_split(dataset, [train_size, test_size])
+    train_loader = DataLoader(train_dataset, batch_size = batch_size, shuffle = True, num_workers = 0)
+    test_loader = DataLoader(test_dataset, batch_size = batch_size, shuffle = False, num_workers = 0)
+    return train_loader, test_loader
 
 def train_test_dataloader(embeddings_dict: dict, *, batch_size: int = 8, test_ratio: float = 0.2) -> tuple[DataLoader]:
     dataset = CremaDataset(embeddings_dict)
