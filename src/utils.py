@@ -53,15 +53,8 @@ def custom_train_test_split(embeddings_dict: dict, train_size: int):
 def train_test_dataloader_v2(embeddings_dict: dict, *, batch_size: int = 8, test_ratio: float = 0.2) -> tuple[DataLoader]:
     #dataset = CremaDataset(embeddings_dict)
     train_size = int((1 - test_ratio) * len(embeddings_dict))
-    test_size = len(embeddings_dict) - train_size
-    train_dataset = []
-    test_dataset = []
-
-    path = "../data/audio_data"
-    file_names = os.listdir(path)
-    speaker_ids = [file_name[:4] for file_name in file_names if file_name != '1076_MTI_SAD_XX.wav']
+    #test_size = len(embeddings_dict) - train_size
     train_dataset, test_dataset = custom_train_test_split(embeddings_dict, train_size=train_size)
-
     #train_dataset, test_dataset = random_split(dataset, [train_size, test_size])
     train_loader = DataLoader(train_dataset, batch_size = batch_size, shuffle = True, num_workers = 0)
     test_loader = DataLoader(test_dataset, batch_size = batch_size, shuffle = False, num_workers = 0)
