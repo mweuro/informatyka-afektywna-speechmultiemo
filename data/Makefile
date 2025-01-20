@@ -9,7 +9,7 @@ LOCAL_ACTORS_META = actors_meta.csv
 LOCAL_RAW_DATA = emotions.csv
 RAW_DIR = raw
 TEMP_DIR = temp
-ALIAS_SCRIPT = ../src/load_data/raw_data_aliases.py
+ALIAS_SCRIPT = ../src/raw_data_aliases.py
 
 .PHONY: load
 load:
@@ -28,8 +28,10 @@ load:
 	cd .. && \
 	rm -rf $(TEMP_DIR)
 
+.PHONY: add_aliases
 add_aliases:
 	python $(ALIAS_SCRIPT)
 
+.PHONY: final_task
 final_task:
 	make load && make add_aliases

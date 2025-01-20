@@ -46,7 +46,7 @@ def get_all_audio_embeddings(root: str,
 
 def main() -> None:
     
-    audio_models = [VARS['audio_models'][0]]
+    audio_models = VARS['audio_models']
     for d in audio_models:
         model = get_class_by_name('transformers', d['model']).from_pretrained(d['name'])
         processor = get_class_by_name('transformers', d['processor']).from_pretrained(d['name'])

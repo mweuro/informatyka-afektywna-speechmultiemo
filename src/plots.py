@@ -48,3 +48,25 @@ def plot_confusion_matrix(cm, normalize = True, cmap = 'Greens'):
                 yticklabels  =[label_map[i] for i in range(cm.shape[0])])
     plt.title('Model heatmap', fontsize = 20)
     plt.show()
+
+
+
+def plot_multiple_confusion_matrices(**cmaps):
+    
+    _, axs = plt.subplots(1, len(cmaps), figsize = (12, 6))
+    vars = load_yaml('../params.yaml')
+    kws = vars['emotion_mapping']
+    label_map = {int(v): k for k, v in kws.items()}
+    
+    for i, (title, cm) in enumerate(cmaps.items()):
+        cm = cm.astype('float') / cm.sum(axis = 1)[:, np.newaxis]    
+        sns.heatmap(cm, 
+                    annot = True, 
+                    fmt = '.2f',
+                    cmap = 'Greens', 
+                    xticklabels = [label_map[i] for i in range(cm.shape[1])], 
+                    yticklabels  =[label_map[i] for i in range(cm.shape[0])],
+                    ax = axs[i])
+        axs[i].set_title(title, fontsize = 15)
+    plt.tight_layout()
+    plt.show()

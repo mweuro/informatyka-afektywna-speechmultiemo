@@ -115,7 +115,7 @@ def get_all_video_embeddings(root = 'data/video_data'):
 
 def main() -> None:
     embeddings = get_all_video_embeddings('data/video_data')
-    torch.save(embeddings, 'embeddings/video/raw2.pt')
+    torch.save(embeddings, 'embeddings/video/raw.pt')
 
 
 if __name__ == '__main__':
