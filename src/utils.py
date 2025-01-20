@@ -37,7 +37,7 @@ def custom_train_test_split(embeddings_dict: dict, train_size: int):
     file_names = os.listdir(folder_path)
     actor_ids = [file_name[:4] for file_name in file_names if file_name != '1076_MTI_SAD_XX.wav']
     actor_ids = sorted(actor_ids)
-    
+
     for actor_id, (embedding, label) in zip(actor_ids, embeddings_dict.items()):
         print(f"File: {actor_id}, Embedding: {embedding}, Label: {label}")
         if actor_id != previous_id and i >= train_size and train_flag == True:
@@ -49,7 +49,7 @@ def custom_train_test_split(embeddings_dict: dict, train_size: int):
                 test[embedding] = label
             previous_id = actor_id
             i = i + 1
-    return train, test
+    return CremaDataset(train), CremaDataset(test)
 
 def train_test_dataloader_v2(embeddings_dict: dict, *, batch_size: int = 8, test_ratio: float = 0.2) -> tuple[DataLoader]:
     #dataset = CremaDataset(embeddings_dict)
