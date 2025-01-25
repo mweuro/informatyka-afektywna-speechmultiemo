@@ -32,6 +32,30 @@ def plot_metrics(train_losses, val_losses, train_accs, val_accs, train_precs, va
 
 
 
+def plot_metrics_late_fusion(losses, accs, precs, recs):
+    epochs = [*range(1, len(losses) + 1)]
+    combinations = list(itertools.product([0, 1], repeat = 2))
+    titles = ['Loss', 'Accuracy', 'Precision', 'Recall']
+    
+    _, axs = plt.subplots(2, 2, figsize = (15, 10))
+    axs[0][0].plot(epochs, losses, color = 'blue', linestyle = 'losses', label = 'fusion loss')
+    axs[0][1].plot(epochs, accs, color = 'red', linestyle = 'losses', label = 'fusion acc')
+    axs[1][0].plot(epochs, precs, color = 'green', linestyle = 'losses', label = 'fusion prec')
+    axs[1][1].plot(epochs, recs, color = 'gold', linestyle = 'losses', label = 'train rec')
+    
+    
+    for idx, (i, j) in enumerate(combinations):
+        axs[i][j].set_title(titles[idx], fontsize = 10)
+        axs[i][j].set_xlabel('Epoch')
+        axs[i][j].set_ylabel(titles[idx])
+        axs[i][j].legend()
+        
+    plt.suptitle('Model results', fontsize = 20)
+    plt.tight_layout()
+    plt.show()
+
+
+
 def plot_confusion_matrix(cm, normalize = True, cmap = 'Greens'):
     plt.figure(figsize = (10, 8))
     vars = load_yaml('../params.yaml')
@@ -65,7 +89,7 @@ def plot_multiple_confusion_matrices(**cmaps):
                     fmt = '.2f',
                     cmap = 'Greens', 
                     xticklabels = [label_map[i] for i in range(cm.shape[1])], 
-                    yticklabels  =[label_map[i] for i in range(cm.shape[0])],
+                    yticklabels = [label_map[i] for i in range(cm.shape[0])],
                     ax = axs[i])
         axs[i].set_title(title, fontsize = 15)
     plt.tight_layout()
